@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CinemaVault</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f1f7;--panel:#fff;--ink:#1a1422;--mute:#6b6178;--line:#ddd5e6;--gold:#a8741a;--goldbg:#e9b949;--red:#c8323a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14101a;--panel:#211a2c;--ink:#f1ece4;--mute:#a89db8;--line:#382d48;--gold:#e9b949;--red:#ff6b6b}}
+:root[data-theme="dark"]{--bg:#14101a;--panel:#211a2c;--ink:#f1ece4;--mute:#a89db8;--line:#382d48;--gold:#e9b949;--red:#ff6b6b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "DM Sans",system-ui,sans-serif}
+button,input,select{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:16px;padding:14px 5vw;border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;flex-wrap:wrap}
+.logo{font:900 26px Fraunces,Georgia,serif;letter-spacing:-.02em;cursor:pointer;margin-right:auto}
+.logo i{font-style:normal;color:var(--gold)}
+.btn{background:var(--goldbg);color:#1a1422;border:0;border-radius:6px;padding:9px 16px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.del{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.card:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+main{padding:24px 5vw 60px;max-width:1300px;margin:0 auto}
+.note{background:var(--panel);border-left:4px solid var(--goldbg);padding:12px 16px;border-radius:0 6px 6px 0;margin-bottom:20px;color:var(--mute)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:6px 14px;cursor:pointer}
+.chip.on{background:var(--goldbg);color:#1a1422;border-color:var(--goldbg)}
+h2{font:700 22px Fraunces,Georgia,serif;margin:28px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;text-align:left;padding:0}
+.poster{aspect-ratio:2/3;display:flex;align-items:flex-end;padding:12px;font:900 21px/1.1 Fraunces,Georgia,serif;color:#fff;position:relative}
+.card .meta{padding:10px 12px;font-size:13px;color:var(--mute)}
+.badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border-radius:4px;padding:1px 7px;font:700 12px "DM Sans"}
+.bar{height:4px;background:var(--line)}.bar b{display:block;height:100%;background:var(--goldbg)}
+.empty{text-align:center;color:var(--mute);padding:70px 10px}
+.box{max-width:420px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px}
+.box h1,.adm h1{font:900 28px Fraunces,Georgia,serif;margin:0 0 14px}
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 4px}
+input[type=text],input[type=email],input[type=password],select{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.err{color:var(--red);min-height:22px;margin:8px 0 0}
+.adm{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:860px){.adm{grid-template-columns:380px 1fr}}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row span{flex:1;min-width:140px}
+dialog{border:0;border-radius:10px;padding:0;background:var(--panel);color:var(--ink);width:min(900px,96vw);max-height:94vh}
+dialog::backdrop{background:rgba(0,0,0,.75)}
+video{width:100%;max-height:62vh;background:#000;display:block}
+.pl{padding:14px 18px}
+.eps{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" id="logo" tabindex="0">Cinema<i>Vault</i></div>
+  <div id="nav"></div>
+</header>
+<main id="app"></main>
+<dialog id="dlg"><div id="dlgbody"></div></dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ADMIN_PW='Rado$123';
+const GENRES=['Action','Comedy','Drama','Horror','Sci-Fi','Romance','Thriller','Animation','Documentary','Fantasy'];
+const RATINGS=['G','PG','12','15','18'];
+const TYPES={movie:'Movie',short:'Short film',series:'Series'};
+let mem={};
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return mem[k]??d}},
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v}}};
+let S={view:'browse',user:ls.get('cv_session',null),admin:false,filter:'all',genre:'all',mode:'in',err:''};
+const items=()=>ls.get('cv_items',[]);
+const hist=()=>S.user?ls.get('cv_h_'+S.user,{}):{};
+
+// file storage (IndexedDB)
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('cinemavault',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const fput=async(k,b)=>{const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('f','readwrite');t.objectStore('f').put(b,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})};
+const fget=async k=>{const d=await idb();return new Promise((res,rej)=>{const q=d.transaction('f').objectStore('f').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
+const fdel=async k=>{const d=await idb();return new Promise(res=>{const t=d.transaction('f','readwrite');t.objectStore('f').delete(k);t.oncomplete=res})};
+
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const hue=t=>{let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return h};
+
+function go(v){S.view=v;S.err='';render()}
+function nav(){
+  let h='';
+  if(S.admin)h+=`<button class="btn ghost" data-a="browse">View site</button> <button class="btn" data-a="out">Leave admin</button>`;
+  else if(S.user)h+=`<span style="color:var(--mute);margin-right:8px">${esc(S.user)}</span><button class="btn ghost" data-a="add">Add account</button> <button class="btn ghost" data-a="out">Sign out</button>`;
+  else h+=`<button class="btn" data-a="login">Sign in</button>`;
+  $('#nav').innerHTML=h;
+}
+function card(it){
+  const p=hist()[it.id],pct=p&&p.dur?Math.min(100,p.t/p.dur*100):0,h=hue(it.title);
+  return `<button class="card" data-play="${it.id}"><div class="poster" style="background:linear-gradient(160deg,hsl(${h} 45% 34%),hsl(${(h+50)%360} 50% 14%))"><span class="badge">${esc(it.rating)}</span>${esc(it.title)}</div>${pct?`<div class="bar"><b style="width:${pct}%"></b></div>`:''}<div class="meta">${TYPES[it.type]} · ${esc(it.genre)}</div></button>`;
+}
+function browse(){
+  const all=items();
+  let list=all.filter(i=>(S.filter==='all'||i.type===S.filter)&&(S.genre==='all'||i.genre===S.genre));
+  let h='';
+  if(!S.user)h+=`<div class="note"><b>You're watching as a guest.</b> Nothing will be saved: no watch history and no progress. <a href="#" data-a="login" style="color:var(--gold)">Sign in</a> to keep it.</div>`;
+  h+=`<div class="filters">`+[['all','All'],['movie','Movies'],['short','Short films'],['series','Series']].map(([k,l])=>`<button class="chip ${S.filter===k?'on':''}" data-f="${k}">${l}</button>`).join('')+`</div>`;
+  h+=`<div class="filters"><button class="chip ${S.genre==='all'?'on':''}" data-g="all">Every genre</button>`+GENRES.map(g=>`<button class="chip ${S.genre===g?'on':''}" data-g="${g}">${g}</button>`).join('')+`</div>`;
+  const hs=hist(),cont=S.user?all.filter(i=>hs[i.id]&&hs[i.id].t>5).sort((a,b)=>hs[b.id].at-hs[a.id].at):[];
+  if(cont.length)h+=`<h2>Continue watching</h2><div class="grid">${cont.map(card).join('')}</div>`;
+  h+=`<h2>${S.filter==='all'?'Everything in the vault':TYPES[S.filter]+'s'}</h2>`;
+  h+=list.length?`<div class="grid">${list.map(card).join('')}</div>`:`<div class="empty">${all.length?'Nothing matches those filters.':'The vault is empty. An admin can add the first title.'}</div>`;
+  return h;
+}
+function login(){
+  const m=S.mode;
+  return `<div class="box"><h1>${m==='admin'?'Admin access':m==='up'?'Create an account':'Sign in'}</h1>
+  <div class="tabs"><button class="chip ${m==='in'?'on':''}" data-m="in">Sign in</button><button class="chip ${m==='up'?'on':''}" data-m="up">Create account</button><button class="chip ${m==='admin'?'on':''}" data-m="admin">Admin</button></div>
+  <div id="f">${m==='admin'?`<label for="pw">Admin password</label><input id="pw" type="password" autocomplete="off">`:
+  `<label for="em">Email</label><input id="em" type="email" autocomplete="email"><label for="pw">Password</label><input id="pw" type="password" autocomplete="${m==='up'?'new-password':'current-password'}">`}
+  <p class="err" id="err" role="alert">${esc(S.err)}</p>
+  <button class="btn" data-a="submit" style="width:100%">${m==='admin'?'Enter admin':m==='up'?'Create account':'Sign in'}</button></div>
+  <p style="text-align:center;margin:16px 0 0"><a href="#" data-a="browse" style="color:var(--mute)">Continue without an account</a></p></div>`;
+}
+function admin(){
+  const its=items();
+  return `<div class="adm"><section><h1>Add to the vault</h1>
+  <label for="t">Title</label><input id="t" type="text">
+  <label for="ty">Type</label><select id="ty">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+  <label for="g">Genre</label><select id="g">${GENRES.map(g=>`<option>${g}</option>`).join('')}</select>
+  <label for="r">Age rating</label><select id="r">${RATINGS.map(g=>`<option>${g}</option>`).join('')}</select>
+  <label for="fl" id="fll">Movie file</label><input id="fl" type="file" accept="video/*">
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" data-a="save" style="width:100%">Add title</button></section>
+  <section><h1>In the vault (${its.length})</h1>${its.length?its.map(i=>`<div class="row"><span><b>${esc(i.title)}</b><br><small style="color:var(--mute)">${TYPES[i.type]} · ${esc(i.genre)} · ${esc(i.rating)}${i.files.length>1?' · '+i.files.length+' episodes':''}</small></span><button class="btn del" data-del="${i.id}">Remove</button></div>`).join(''):'<p class="empty">Nothing added yet.</p>'}</section></div>`;
+}
+function render(){
+  nav();
+  $('#app').innerHTML=S.view==='login'?login():S.view==='admin'&&S.admin?admin():browse();
+  if(S.view==='admin'){const t=$('#ty');if(t)t.onchange=()=>{const s=t.value==='series';$('#fl').multiple=s;$('#fll').textContent=s?'Episode files (pick all, in order)':t.value==='short'?'Short film file':'Movie file'}}
+}
+
+let cur=null,url=null;
+async function play(id,ep=0){
+  const it=items().find(i=>i.id===id);if(!it)return;
+  cur={it,ep};
+  const b=await fget(it.files[ep].id);
+  if(url)URL.revokeObjectURL(url);
+  if(!b){$('#dlgbody').innerHTML='<div class="pl">This file is missing from this browser.</div>';$('#dlg').showModal();return}
+  url=URL.createObjectURL(b);
+  const p=hist()[id];
+  $('#dlgbody').innerHTML=`<video id="v" src="${url}" controls autoplay></video><div class="pl"><b>${esc(it.title)}</b> <span style="color:var(--mute)">· ${esc(it.rating)} · ${esc(it.genre)}</span>
+  ${it.files.length>1?`<div class="eps">${it.files.map((f,n)=>`<button class="chip ${n===ep?'on':''}" data-ep="${n}">Episode ${n+1}</button>`).join('')}</div>`:''}
+  <p style="color:var(--mute);margin:8px 0 0;font-size:14px">${S.user?'Your progress is saved to '+esc(S.user)+'.':'Guest mode: nothing is being saved.'}</p>
+  <button class="btn ghost" data-a="close" style="margin-top:10px">Close</button></div>`;
+  $('#dlg').showModal();
+  const v=$('#v');
+  if(S.user&&p&&p.ep===ep&&p.t>5)v.addEventListener('loadedmetadata',()=>{v.currentTime=p.t},{once:true});
+  let last=0;
+  v.ontimeupdate=()=>{if(!S.user||Date.now()-last<2000)return;last=Date.now();
+    const h=hist();h[id]={ep,t:v.currentTime,dur:v.duration||0,at:Date.now()};ls.set('cv_h_'+S.user,h)};
+}
+$('#dlg').addEventListener('close',()=>{const v=$('#v');if(v)v.pause();$('#dlgbody').innerHTML='';if(S.view==='browse')render()});
+
+async function submit(){
+  const pw=$('#pw').value;
+  if(S.mode==='admin'){
+    if(pw===ADMIN_PW){S.admin=true;S.user=null;go('admin')}else{S.err='Wrong admin password.';render()}
+    return;
+  }
+  const em=$('#em').value.trim().toLowerCase(),us=ls.get('cv_users',{});
+  if(!/^\S+@\S+\.\S+$/.test(em)){S.err='Enter a valid email.';return render()}
+  if(pw.length<6){S.err='Password must be at least 6 characters.';return render()}
+  const hp=await sha(pw);
+  if(S.mode==='up'){
+    if(us[em]){S.err='That account already exists. Sign in instead.';return render()}
+    us[em]=hp;ls.set('cv_users',us);
+  }else if(us[em]!==hp){S.err='Email or password is wrong.';return render()}
+  S.user=em;S.admin=false;ls.set('cv_session',em);go('browse');
+}
+async function save(){
+  const t=$('#t').value.trim(),ty=$('#ty').value,fs=[...$('#fl').files],e=$('#err');
+  if(!t){e.textContent='Enter a title.';return}
+  if(!fs.length){e.textContent='Choose a video file.';return}
+  e.textContent='Saving…';
+  try{
+    const id='i'+Date.now(),files=[];
+    for(let n=0;n<(ty==='series'?fs.length:1);n++){const fid=id+'_'+n;await fput(fid,fs[n]);files.push({id:fid,name:fs[n].name})}
+    const l=items();l.push({id,title:t,type:ty,genre:$('#g').value,rating:$('#r').value,files});ls.set('cv_items',l);
+    render();
+  }catch(x){e.textContent='Could not save the file. Your browser may be out of storage.'}
+}
+
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-a],[data-f],[data-g],[data-m],[data-play],[data-del],[data-ep]');if(!el)return;
+  const d=el.dataset;
+  if(d.a==='login'||d.a==='add'){e.preventDefault();S.mode=d.a==='add'?'up':'in';go('login')}
+  else if(d.a==='browse'){e.preventDefault();go('browse')}
+  else if(d.a==='out'){S.user=null;S.admin=false;ls.set('cv_session',null);go('browse')}
+  else if(d.a==='submit')submit();
+  else if(d.a==='save')save();
+  else if(d.a==='close')$('#dlg').close();
+  else if(d.f){S.filter=d.f;render()}
+  else if(d.g){S.genre=d.g;render()}
+  else if(d.m){S.mode=d.m;S.err='';render()}
+  else if(d.play)play(d.play);
+  else if(d.ep)play(cur.it.id,+d.ep);
+  else if(d.del){const it=items().find(i=>i.id===d.del);
+    if(it&&confirm('Remove "'+it.title+'" from the vault?')){for(const f of it.files)await fdel(f.id);ls.set('cv_items',items().filter(i=>i.id!==d.del));render()}}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&S.view==='login'&&e.target.tagName==='INPUT')submit()});
+$('#logo').onclick=()=>go('browse');
+render();
+</script>
+</body>
+</html>
